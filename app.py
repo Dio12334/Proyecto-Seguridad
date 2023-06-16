@@ -1,5 +1,5 @@
 #app.py
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
  
@@ -13,7 +13,32 @@ DB_PASS = "Manzana12345678"
  
 conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
  
-@app.route('/')
+
+
+# Login route
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        cur = conn.cursor()
+        # Check if the entered credentials are valid
+        cur.execute('SELECT * FROM users WHERE username = %s AND master_password = %s', (username, password))
+        user = cur.fetchone()
+
+        if user:
+            # Set a session variable to indicate that the user is logged in
+            session['logged_in'] = True
+            session['username'] = user[1]  # Assuming the username is stored at index 1 in the users table
+            flash('Login successful!')
+            return redirect(url_for('Index'))
+        else:
+            flash('Invalid credentials. Please try again.')
+
+    return render_template('login.html')
+
+
+@app.route('/index')
 def Index():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     s = "SELECT * FROM passwords"
