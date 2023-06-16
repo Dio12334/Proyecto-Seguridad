@@ -1,4 +1,4 @@
-#app.py
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
@@ -13,6 +13,15 @@ DB_PASS = "Manzana12345678"
  
 conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
  
+# Decorator function to check if the user is logged in
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in to access this page.')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 # Login route
@@ -29,7 +38,7 @@ def login():
         if user:
             # Set a session variable to indicate that the user is logged in
             session['logged_in'] = True
-            session['username'] = user[1]  # Assuming the username is stored at index 1 in the users table
+            session['username'] = user[1]  # username is stored at index 1 in the users table
             flash('Login successful!')
             return redirect(url_for('Index'))
         else:
@@ -39,6 +48,7 @@ def login():
 
 
 @app.route('/index')
+@login_required 
 def Index():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     s = "SELECT * FROM passwords"
@@ -46,7 +56,9 @@ def Index():
     list_passwords = cur.fetchall()
     return render_template('index.html', list_passwords = list_passwords)
  
+
 @app.route('/add_password', methods=['POST'])
+@login_required 
 def add_password():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     if request.method == 'POST':
@@ -59,7 +71,9 @@ def add_password():
         return redirect(url_for('Index'))
     
  
+
 @app.route('/edit/<page_name>', methods = ['POST', 'GET'])
+@login_required 
 def get_password(page_name):
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
    
@@ -69,8 +83,11 @@ def get_password(page_name):
     print(data[0])
     return render_template('edit.html', password = data[0])
  
+
+
 @app.route('/update/<page_name>', methods=['POST'])
-def update_student(page_name):
+@login_required 
+def update_password(page_name):
     if request.method == 'POST':
         new_page_name = request.form['page_name']
         destination_url = request.form['destination_url']
@@ -87,8 +104,11 @@ def update_student(page_name):
         flash('Password Updated Successfully')
         conn.commit()
         return redirect(url_for('Index'))
+    
+
  
 @app.route('/delete/<string:page_name>', methods = ['POST','GET'])
+@login_required 
 def delete_password(page_name):
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
    
