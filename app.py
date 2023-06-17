@@ -2,6 +2,10 @@ from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 import psycopg2 #pip install psycopg2 
 import psycopg2.extras
+from src import master_password
+from Crypto.Protocol.KDF import scrypt
+from src import normal_password
+
  
 app = Flask(__name__)
 app.secret_key = "diego-ale-seguridad"
@@ -32,13 +36,17 @@ def login():
         password = request.form['password']
         cur = conn.cursor()
         # Check if the entered credentials are valid
-        cur.execute('SELECT * FROM users WHERE username = %s AND master_password = %s', (username, password))
+        cur.execute('SELECT * FROM users WHERE username = %s', [username])
         user = cur.fetchone()
 
-        if user:
+        if user and master_password.check_password(password, bytes(user[2])):
             # Set a session variable to indicate that the user is logged in
             session['logged_in'] = True
             session['username'] = user[1]  # username is stored at index 1 in the users table
+            session['user_id'] = user[0]
+            salt = bytes(user[2])[:29]
+            app.secret_key = scrypt(password, salt, 16, N=2**14, r=8, p=1)
+            print(app.secret_key, len(app.secret_key))
             flash('Login successful!')
             return redirect(url_for('Index'))
         else:
@@ -46,13 +54,24 @@ def login():
 
     return render_template('login.html')
 
+@app.route('/create-user', methods=['POST'])
+def create_user():
+    new_username = request.form['new_username']
+    new_password = request.form['new_password']
+    new_password = master_password.hash_password(new_password)
+    cur = conn.cursor()
+    
+    cur.execute("INSERT INTO users (username, master_password) VALUES (%s, %s)", (new_username, new_password))
+    conn.commit()
+    flash('New user created successfully!')
+    return redirect(url_for('login'))
 
 @app.route('/index')
 @login_required 
 def Index():
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-    s = "SELECT * FROM passwords"
-    cur.execute(s) # Execute the SQL
+    
+    cur.execute("SELECT * FROM passwords WHERE user_id = %s", [session.get("user_id")]) # Execute the SQL
     list_passwords = cur.fetchall()
     return render_template('index.html', list_passwords = list_passwords)
  
@@ -65,7 +84,13 @@ def add_password():
         page_name = request.form['page_name']
         destination_url = request.form['destination_url']
         encrypted_password = request.form['encrypted_password']
-        cur.execute("INSERT INTO passwords (page_name, destination_url, encrypted_password) VALUES (%s,%s,%s)", (page_name, destination_url, encrypted_password))
+        nonce, encrypted_password, tag = normal_password.AES_Encrypt(encrypted_password, app.secret_key)
+        print("ishallah", nonce, encrypted_password, tag)
+        cur.execute("INSERT INTO passwords (user_id, page_name, destination_url, encrypted_password, authentication_tag, nonce) VALUES (%s,%s,%s,%s,%s,%s)", 
+                    (session.get("user_id"), page_name, destination_url, 
+                     psycopg2.Binary(encrypted_password),
+                     psycopg2.Binary(tag), 
+                     psycopg2.Binary(nonce)))
         conn.commit()
         flash('New password Added successfully')
         return redirect(url_for('Index'))
@@ -77,10 +102,15 @@ def add_password():
 def get_password(page_name):
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
    
-    cur.execute('SELECT * FROM passwords WHERE page_name = %s', (page_name,))
+    cur.execute('SELECT * FROM passwords WHERE page_name = %s and user_id = %s', (page_name, session.get("user_id")))
     data = cur.fetchall()
     cur.close()
-    print(data[0])
+    data[0][3] = normal_password.AES_Decrypt(
+        bytes(data[0][3]),
+        app.secret_key,
+        bytes(data[0][5]),
+        bytes(data[0][4])
+    )    
     return render_template('edit.html', password = data[0])
  
 
@@ -92,15 +122,19 @@ def update_password(page_name):
         new_page_name = request.form['page_name']
         destination_url = request.form['destination_url']
         encrypted_password = request.form['encrypted_password']
+        
+        nonce, encrypted_password, tag = normal_password.AES_Encrypt(encrypted_password, app.secret_key)
          
         cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
         cur.execute("""
             UPDATE passwords
             SET page_name = %s,
                 destination_url = %s,
-                encrypted_password = %s
-            WHERE page_name = %s
-        """, (new_page_name, destination_url, encrypted_password, page_name))
+                encrypted_password = %s,
+                authentication_tag = %s,
+                nonce = %s
+            WHERE page_name = %s and user_id = %s
+        """, (new_page_name, destination_url, encrypted_password, page_name, session.get("user_id"), tag, nonce))
         flash('Password Updated Successfully')
         conn.commit()
         return redirect(url_for('Index'))
@@ -112,7 +146,7 @@ def update_password(page_name):
 def delete_password(page_name):
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
    
-    cur.execute('DELETE FROM passwords WHERE page_name = %s', (page_name,))
+    cur.execute('DELETE FROM passwords WHERE page_name = %s and user_id = %s', (page_name, session.get("user_id")))
     conn.commit()
     flash('Page Removed Successfully')
     return redirect(url_for('Index'))
