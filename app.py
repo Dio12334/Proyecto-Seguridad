@@ -45,8 +45,9 @@ def login():
             session['username'] = user[1]  # username is stored at index 1 in the users table
             session['user_id'] = user[0]
             salt = bytes(user[2])[:29]
+
             app.secret_key = scrypt(password, salt, 16, N=2**14, r=8, p=1)
-            print(app.secret_key, len(app.secret_key))
+
             flash('Login successful!')
             return redirect(url_for('Index'))
         else:
@@ -84,8 +85,9 @@ def add_password():
         page_name = request.form['page_name']
         destination_url = request.form['destination_url']
         encrypted_password = request.form['encrypted_password']
+
         nonce, encrypted_password, tag = normal_password.AES_Encrypt(encrypted_password, app.secret_key)
-        print("ishallah", nonce, encrypted_password, tag)
+        
         cur.execute("INSERT INTO passwords (user_id, page_name, destination_url, encrypted_password, authentication_tag, nonce) VALUES (%s,%s,%s,%s,%s,%s)", 
                     (session.get("user_id"), page_name, destination_url, 
                      psycopg2.Binary(encrypted_password),
@@ -134,7 +136,9 @@ def update_password(page_name):
                 authentication_tag = %s,
                 nonce = %s
             WHERE page_name = %s and user_id = %s
-        """, (new_page_name, destination_url, encrypted_password, page_name, session.get("user_id"), tag, nonce))
+        """, (new_page_name, 
+              destination_url, 
+              encrypted_password,  tag, nonce, page_name, session.get("user_id")))
         flash('Password Updated Successfully')
         conn.commit()
         return redirect(url_for('Index'))
