@@ -3,6 +3,31 @@
 <head>
     <title>Login</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+	    <script>
+        function validatePassword() {
+            var password = document.getElementById("new_password").value;
+
+            // Check if password is at least 8 characters long
+            if (password.length < 8) {
+                alert("Password must be at least 8 characters long.");
+                return false;
+            }
+
+            // Check if password contains at least one uppercase letter
+            if (!/[A-Z]/.test(password)) {
+                alert("Password must contain at least one uppercase letter.");
+                return false;
+            }
+
+            // Check if password contains at least one digit
+            if (!/\d/.test(password)) {
+                alert("Password must contain at least one digit.");
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 </head>
 <body>
     <div class="container">
@@ -27,7 +52,7 @@
         </form>
         <hr>
         <h4>Create a new user:</h4>
-        <form method="POST" action="{{ url_for('create_user') }}">
+        <form method="POST" action="{{ url_for('create_user') }}" onsubmit="return validatePassword();">
             <div class="form-group">
                 <label for="new_username">New Username:</label>
                 <input type="text" class="form-control" id="new_username" name="new_username">
