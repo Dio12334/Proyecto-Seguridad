@@ -7,6 +7,7 @@ from Crypto.Protocol.KDF import scrypt
 from src import normal_password
 from dotenv import load_dotenv
 import os
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -25,6 +26,10 @@ DB_PASS = os.getenv("DB_PASS")
  
 conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASS, host=DB_HOST)
  
+
+def is_valid_password(password):
+    return len(password) >= 8 and re.search('[0-9]',password) and re.search('[A-Z]',password) 
+
 # Decorator function to check if the user is logged in
 def login_required(f):
     @wraps(f)
@@ -63,17 +68,19 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/create-user', methods=['POST'])
+@app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
-    new_username = request.form['new_username']
-    new_password = request.form['new_password']
-    new_password = master_password.hash_password(new_password)
-    cur = conn.cursor()
+    if request.method == 'POST':
+        new_username = request.form['new_username']
+        new_password = request.form['new_password']
+        new_password = master_password.hash_password(new_password)
+        cur = conn.cursor()
     
-    cur.execute("INSERT INTO users (username, master_password) VALUES (%s, %s)", (new_username, new_password))
-    conn.commit()
-    flash('New user created successfully!')
-    return redirect(url_for('login'))
+        cur.execute("INSERT INTO users (username, master_password) VALUES (%s, %s)", (new_username, new_password))
+        conn.commit()
+        flash('New user created successfully!')
+        return redirect(url_for('login'))
+    return render_template('signin.html')
 
 @app.route('/index')
 @login_required 
@@ -161,6 +168,23 @@ def delete_password(page_name):
     cur.execute('DELETE FROM passwords WHERE page_name = %s and user_id = %s', (page_name, session.get("user_id")))
     conn.commit()
     flash('Page Removed Successfully')
+    return redirect(url_for('Index'))
+
+@app.route('/show/<string:page_name>', methods = ['GET'])
+@login_required 
+def show_password(page_name):
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+   
+    cur.execute('SELECT * FROM passwords WHERE page_name = %s and user_id = %s', (page_name, session.get("user_id")))
+    data = cur.fetchall()
+    cur.close()
+    data[0][3] = normal_password.AES_Decrypt(
+        bytes(data[0][3]),
+        app.secret_key,
+        bytes(data[0][5]),
+        bytes(data[0][4])
+    )    
+    flash(data[0][3])
     return redirect(url_for('Index'))
  
 if __name__ == "__main__":

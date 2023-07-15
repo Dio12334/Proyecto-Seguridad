@@ -11,7 +11,12 @@
             <input type="text" name="destination_url" value="{{password.destination_url}}" class="form-control">
           </div>
           <div class="form-group">
-            <input type="text" name="encrypted_password" value="{{password.encrypted_password}}" class="form-control">
+            <input type="text" id="new_password" name="encrypted_password" value="{{password.encrypted_password}}" class="form-control" >
+          </div>
+		  <div class="form-group">
+            <button type="button" class="btn btn-primary btn-block" onclick="generatePassword();">
+              Generate Password
+            </button>
           </div>
           <div class="form-group">
             <button type="submit" class="btn btn-primary btn-block">
@@ -22,4 +27,35 @@
       </div>
     </div>
   </div>
+<script>
+  function generatePassword() {
+    var length = 8; // Minimum password length
+    var uppercaseRegex = /[A-Z]/; // Regex to match uppercase letters
+    var numberRegex = /[0-9]/; // Regex to match numbers
+
+    var password = generateRandomPassword(length);
+
+    // Check if the generated password meets the requirements
+    while (!password.match(uppercaseRegex) || !password.match(numberRegex)) {
+      password = generateRandomPassword(length);
+    }
+
+    var encryptedPasswordInput = document.getElementById('new_password');
+    if (encryptedPasswordInput) {
+      encryptedPasswordInput.value = password;
+    }
+  }
+
+  function generateRandomPassword(length) {
+    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var password = '';
+
+    for (var i = 0; i < length; i++) {
+      var randomIndex = Math.floor(Math.random() * characters.length);
+      password += characters.charAt(randomIndex);
+    }
+
+    return password;
+  }
+</script>
 {% endblock %}
