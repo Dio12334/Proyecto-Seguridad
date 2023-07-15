@@ -68,17 +68,19 @@ def login():
 
     return render_template('login.html')
 
-@app.route('/create-user', methods=['POST'])
+@app.route('/create-user', methods=['GET', 'POST'])
 def create_user():
-    new_username = request.form['new_username']
-    new_password = request.form['new_password']
-    new_password = master_password.hash_password(new_password)
-    cur = conn.cursor()
+    if request.method == 'POST':
+        new_username = request.form['new_username']
+        new_password = request.form['new_password']
+        new_password = master_password.hash_password(new_password)
+        cur = conn.cursor()
     
-    cur.execute("INSERT INTO users (username, master_password) VALUES (%s, %s)", (new_username, new_password))
-    conn.commit()
-    flash('New user created successfully!')
-    return redirect(url_for('login'))
+        cur.execute("INSERT INTO users (username, master_password) VALUES (%s, %s)", (new_username, new_password))
+        conn.commit()
+        flash('New user created successfully!')
+        return redirect(url_for('login'))
+    return render_template('signin.html')
 
 @app.route('/index')
 @login_required 
