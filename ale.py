@@ -24,3 +24,5 @@ def generate_password(length=10):
             has_special = True
 
     return password
+
+print(generate_password())

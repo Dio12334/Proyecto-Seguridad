@@ -90,34 +90,65 @@
 
 <script>
   function generatePassword() {
-    var length = 8; // Minimum password length
+    var length = 10; // Minimum password length
     var uppercaseRegex = /[A-Z]/; // Regex to match uppercase letters
+    var lowercaseRegex = /[a-z]/; // Regex to match lowercase letters
     var numberRegex = /[0-9]/; // Regex to match numbers
+    var specialCharRegex = /[\W_]/; // Regex to match special characters
 
     var password = generateRandomPassword(length);
 
     // Check if the generated password meets the requirements
-    while (!password.match(uppercaseRegex) || !password.match(numberRegex)) {
-      password = generateRandomPassword(length);
+    while (!password.match(uppercaseRegex) || !password.match(lowercaseRegex) || !password.match(numberRegex) || !password.match(specialCharRegex)) {
+        password = generateRandomPassword(length);
     }
 
-    var encryptedPasswordInput = document.getElementById('new_password');
-    if (encryptedPasswordInput) {
-      encryptedPasswordInput.value = password;
+    var passwordInput = document.getElementById('new_password');
+    if (passwordInput) {
+        passwordInput.value = password;
     }
   }
 
   function generateRandomPassword(length) {
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var password = '';
+      var uppercaseChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      var lowercaseChars = 'abcdefghijklmnopqrstuvwxyz';
+      var numberChars = '0123456789';
+      var specialChars = '!@#$%^&*()_+-=[]{}|;:\'",./<>?';
 
-    for (var i = 0; i < length; i++) {
-      var randomIndex = Math.floor(Math.random() * characters.length);
-      password += characters.charAt(randomIndex);
-    }
+      var password = '';
 
-    return password;
+      password += getRandomChar(uppercaseChars);
+      password += getRandomChar(lowercaseChars);
+      password += getRandomChar(numberChars);
+      password += getRandomChar(specialChars);
+
+      var remainingLength = length - 4;
+
+      for (var i = 0; i < remainingLength; i++) {
+          var randomIndex = Math.floor(Math.random() * uppercaseChars.length);
+          password += uppercaseChars.charAt(randomIndex);
+      }
+
+      return shuffleString(password);
   }
+
+  function getRandomChar(chars) {
+      var randomIndex = Math.floor(Math.random() * chars.length);
+      return chars.charAt(randomIndex);
+  }
+
+  function shuffleString(string) {
+      var shuffledString = '';
+      var stringArray = string.split('');
+
+      while (stringArray.length > 0) {
+          var randomIndex = Math.floor(Math.random() * stringArray.length);
+          shuffledString += stringArray.splice(randomIndex, 1);
+      }
+
+      return shuffledString;
+  }
+
 </script>
     <div class="col-md-8">
       <table id="example" class="table table-striped table-bordered" style="width:100%">
