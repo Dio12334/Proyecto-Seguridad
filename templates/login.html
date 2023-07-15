@@ -3,17 +3,102 @@
 <head>
     <title>Login</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f8f8;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .container h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .container h5 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #888;
+        }
+
+        .container p {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #666;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .container form {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-weight: bold;
+        }
+
+        .form-control {
+            border-radius: 3px;
+        }
+
+        .btn-primary,
+        .btn-success {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background-color: #337ab7;
+            border-color: #2e6da4;
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus,
+        .btn-primary:active,
+        .btn-primary.active {
+            background-color: #286090;
+            border-color: #204d74;
+        }
+
+        .btn-success {
+            background-color: #5cb85c;
+            border-color: #4cae4c;
+        }
+
+        .btn-success:hover,
+        .btn-success:focus,
+        .btn-success:active,
+        .btn-success.active {
+            background-color: #449d44;
+            border-color: #398439;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h2>Login</h2>
-		<h5>Remember that the master password is not recoverable</h5>
+        <h2>Password Manager</h2>
+        <p>A secure place to store and manage your passwords.</p>
+        <h5>Login</h5>
+        <h5>Remember that the master password is not recoverable</h5>
         {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-info">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
+        {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-info">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
         {% endwith %}
         <form method="POST" action="{{ url_for('login') }}">
             <div class="form-group">
@@ -27,11 +112,10 @@
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
         <hr>
-        <h4>Create a new user:</h4>
+        <p>Welcome! If you don't have an account, create a new user:</p>
         <form method="GET" action="{{ url_for('create_user') }}">
             <button type="submit" class="btn btn-success">Create User</button>
         </form>
     </div>
 </body>
 </html>
-

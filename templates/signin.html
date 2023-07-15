@@ -3,9 +3,10 @@
 <head>
     <title>Sign in</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-	    <script>
+    <script>
         function validatePassword() {
             var password = document.getElementById("new_password").value;
+            var username = document.getElementById("new_username").value;
 
             // Check if password is at least 8 characters long
             if (password.length < 8) {
@@ -22,6 +23,12 @@
             // Check if password contains at least one digit
             if (!/\d/.test(password)) {
                 alert("Password must contain at least one digit.");
+                return false;
+            }
+
+            // Check if password is the same as the username
+            if (password === username) {
+                alert("Password cannot be the same as the username.");
                 return false;
             }
 
@@ -50,6 +57,7 @@
                 <input type="password" class="form-control" id="new_password" name="new_password">
                 <small class="text-muted">Our minimum requirements:</small>
                 <ul>
+                    <li>Your password can not be the same as your username</li>
                     <li>At least 8 characters in length</li>
                     <li>Must have at least one uppercase letter</li>
                     <li>Must have at least one number</li>
@@ -61,4 +69,3 @@
     </div>
 </body>
 </html>
-
